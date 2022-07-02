@@ -119,8 +119,8 @@
                 tracks: [
                     mergedChannel,
                     ...unchangedChannels
-                ].flatMap(v => v ? [[v.ch, rpgen4.makeMidiTrack(v.midiNoteSequence)]] : []),
-                bpm: rpgen4.toggleTempoAndBpm([...tempos][0]),
+                ].filter(v => v).map(([ch, midiNoteSequence]) => [ch, rpgen4.makeMidiTrack(midiNoteSequence)]).sort(([a], [b]) => a - b),
+                bpm: rpgen4.toggleTempoAndBpm([...tempos][0][1]),
                 div: timeDivision
             }),
             `midiMerge.mid`
