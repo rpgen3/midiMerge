@@ -127,6 +127,7 @@
         );
     }).addClass('btn');
     const mergeChannels = channels => {
+        if (channels < 2) return null;
         const heap = new rpgen4.Heap();
         for (const [ch, midiNoteSequence] of channels) {
             for (const midiNote of midiNoteSequence) heap.add(midiNote.start, midiNote);
@@ -144,7 +145,9 @@
                     lastMidiNote.end = start;
                 }
             }
-            now.set(pitch, now);
+            now.set(pitch, midiNote);
+            result.push(midiNote);
         }
+        return [channels[0], result];
     };
 })();
