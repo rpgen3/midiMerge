@@ -148,6 +148,6 @@
             now.set(pitch, midiNote);
             result.push(midiNote);
         }
-        return [channels[0], result];
+        return [channels[0][0], result];
     };
 })();
