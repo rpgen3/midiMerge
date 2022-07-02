@@ -13,8 +13,8 @@
     const head = $('<header>').appendTo(html),
           main = $('<main>').appendTo(html),
           foot = $('<footer>').appendTo(html);
-    $('<h1>').appendTo(head).text('MIDI分割');
-    $('<h2>').appendTo(head).text('指定したタイミングでMIDIを分割');
+    $('<h1>').appendTo(head).text('MIDIの合併');
+    $('<h2>').appendTo(head).text('MIDIのいくつかのトラックの合併');
     const rpgen3 = await importAll([
         [
             'input',
@@ -29,6 +29,7 @@
                 'fixTrack',
                 'getTempos',
                 'makeMidiNoteSequence',
+                'makeMidiTrack',
                 'toMIDI'
             ].map(v => `midi/${v}`)
         ].flat().map(v => `https://rpgen3.github.io/piano/mjs/${v}.mjs`)
@@ -78,20 +79,25 @@
         return m.get(k);
     };
     let isMergeList = null;
+    let channels = null;
     rpgen3.addBtn(main, 'view channels', () => {
         if(!g_midi) return table.text('Error: Must input MIDI file.');
         const midiNoteSequence = rpgen4.makeMidiNoteSequence(g_midi);
-        const channels = new Map;
+        channels = new Map;
         const get = makeSafelyGet(channels);
         for(const midiNote of midiNoteSequence) get(midiNote.ch).push(midiNote);
         table.empty();
-        const tr = $('<tr>').appendTo($('<thead>').appendTo(table));
+        const tr = $('<tr>').appendTo($('<thead>').appendTo(table)).on('click', () => {
+            for (const [ch, f] of isMergeList) f(!f());
+        });
         for(const v of [
             'ch',
             'notes',
             'isMerge'
         ]) $('<th>').appendTo(tr).text(v);
+        const tbody = $('<tbody>').appendTo(table);
         isMergeList = [...channels.keys()].sort((a, b) => a - b).map(ch => {
+            const tr = $('<tr>').appendTo(tbody);
             for(const v of [
                 ch,
                 get(ch).length
@@ -102,34 +108,43 @@
     const table = $('<table>').appendTo(addHideArea('channels').html);
     rpgen3.addBtn(main, 'start merge', () => {
         if(!g_midi) return table.text('Error: Must input MIDI file.');
+        const merged = new Set(isMergeList.filter(([ch, f]) => f()).map(([ch, f]) => ch));
+        const mergedChannel = mergeChannels([...channels].filter(([ch, midiNoteSequence]) => merged.has(ch)));
+        const unchanged = new Set(isMergeList.filter(([ch, f]) => !f()).map(([ch, f]) => ch));
+        const unchangedChannels = [...channels].filter(([ch, midiNoteSequence]) => unchanged.has(ch));
         const {timeDivision} = g_midi;
         const tempos = rpgen4.getTempos(g_midi);
         rpgen3.download(
             rpgen4.toMIDI({
-                tracks,
+                tracks: [
+                    mergedChannel,
+                    ...unchangedChannels
+                ].flatMap(v => v ? [[v.ch, rpgen4.makeMidiTrack(v.midiNoteSequence)]] : []),
                 bpm: rpgen4.toggleTempoAndBpm([...tempos][0]),
                 div: timeDivision
             }),
             `midiMerge.mid`
         );
     }).addClass('btn');
-    const toMidiTrack = (units, time) => {
+    const mergeChannels = channels => {
         const heap = new rpgen4.Heap();
-        for(const {
-            pitch,
-            velocity,
-            start,
-            end
-        } of units) {
-            for(const [i, v] of [
-                start - time,
-                end - time
-            ].entries()) heap.add(v, {
-                pitch,
-                velocity: i === 0 ? 100 : 0,
-                when: v
-            });
+        for (const [ch, midiNoteSequence] of channels) {
+            for (const midiNote of midiNoteSequence) heap.add(midiNote.start, midiNote);
         }
-        return rpgen4.fixTrack([...heap]);
+        const result = [];
+        const now = new Map;
+        for (const midiNote of heap) {
+            const {
+                pitch,
+                start
+            } = midiNote;
+            if (now.has(pitch)) {
+                const lastMidiNote = now.get(pitch);
+                if (lastMidiNote.end > start) {
+                    lastMidiNote.end = start;
+                }
+            }
+            now.set(pitch, now);
+        }
     };
 })();
