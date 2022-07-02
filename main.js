@@ -137,11 +137,15 @@
         for (const midiNote of heap) {
             const {
                 pitch,
-                start
+                start,
+                end
             } = midiNote;
             if (now.has(pitch)) {
                 const lastMidiNote = now.get(pitch);
-                if (lastMidiNote.end > start) {
+                if (lastMidiNote.start === start) {
+                    lastMidiNote.end = Math.max(lastMidiNote.end, end);
+                    continue;
+                } else if (lastMidiNote.end > start) {
                     lastMidiNote.end = start;
                 }
             }
