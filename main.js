@@ -26,10 +26,9 @@
         'https://rpgen3.github.io/maze/mjs/heap/Heap.mjs',
         [
             [
-                'fixTrack',
+                'MidiNote',
+                'MidiNoteMessage',
                 'getTempos',
-                'makeMidiNoteSequence',
-                'makeMidiTrack',
                 'toMIDI'
             ].map(v => `midi/${v}`)
         ].flat().map(v => `https://rpgen3.github.io/piano/mjs/${v}.mjs`)
@@ -82,10 +81,10 @@
     let channels = null;
     rpgen3.addBtn(main, 'view channels', () => {
         if(!g_midi) return table.text('Error: Must input MIDI file.');
-        const midiNoteSequence = rpgen4.makeMidiNoteSequence(g_midi);
+        const midiNoteArray = rpgen4.MidiNote.makeArray(g_midi);
         channels = new Map;
         const get = makeSafelyGet(channels);
-        for(const midiNote of midiNoteSequence) get(midiNote.ch).push(midiNote);
+        for(const midiNote of midiNoteArray) get(midiNote.ch).push(midiNote);
         table.empty();
         const tr = $('<tr>').appendTo($('<thead>').appendTo(table)).on('click', () => {
             for (const [ch, f] of isMergeList) f(!f());
@@ -115,9 +114,9 @@
     rpgen3.addBtn(main, 'start merge', () => {
         if(!g_midi) return table.text('Error: Must input MIDI file.');
         const merged = new Set(isMergeList.filter(([ch, f]) => f()).map(([ch, f]) => ch));
-        const mergedChannel = mergeChannels([...channels].filter(([ch, midiNoteSequence]) => merged.has(ch)));
+        const mergedChannel = mergeChannels([...channels].filter(([ch, midiNoteArray]) => merged.has(ch)));
         const unchanged = new Set(isMergeList.filter(([ch, f]) => !f()).map(([ch, f]) => ch));
-        const unchangedChannels = [...channels].filter(([ch, midiNoteSequence]) => unchanged.has(ch));
+        const unchangedChannels = [...channels].filter(([ch, midiNoteArray]) => unchanged.has(ch));
         const {timeDivision} = g_midi;
         const tempos = rpgen4.getTempos(g_midi);
         rpgen3.download(
@@ -125,7 +124,7 @@
                 tracks: [
                     mergedChannel,
                     ...unchangedChannels
-                ].filter(v => v).map(([ch, midiNoteSequence]) => [ch, rpgen4.makeMidiTrack(midiNoteSequence)]).sort(([a], [b]) => a - b),
+                ].filter(v => v).map(([ch, midiNoteArray]) => [ch, rpgen4.MidiNoteMessage.makeArray(midiNoteArray)]).sort(([a], [b]) => a - b),
                 bpm: rpgen4.toggleTempoAndBpm([...tempos][0][1]),
                 div: timeDivision
             }),
@@ -135,8 +134,8 @@
     const mergeChannels = channels => {
         if (channels < 2) return null;
         const heap = new rpgen4.Heap();
-        for (const [ch, midiNoteSequence] of channels) {
-            for (const midiNote of midiNoteSequence) heap.add(midiNote.start, midiNote);
+        for (const [ch, midiNoteArray] of channels) {
+            for (const midiNote of midiNoteArray) heap.add(midiNote.start, midiNote);
         }
         const result = [];
         const now = new Map;
