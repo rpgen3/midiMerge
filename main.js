@@ -91,9 +91,9 @@
             for (const [ch, f] of isMergeList) f(!f());
         });
         for(const v of [
-            'ch',
-            'notes',
-            'isMerge'
+            'MIDI channel',
+            'MIDI note count',
+            'merge'
         ]) $('<th>').appendTo(tr).text(v);
         const tbody = $('<tbody>').appendTo(table);
         isMergeList = [...channels.keys()].sort((a, b) => a - b).map(ch => {
@@ -102,7 +102,13 @@
                 ch,
                 get(ch).length
             ]) $('<td>').appendTo(tr).text(v);
-            return [ch, rpgen3.addInputBool($('<td>').appendTo(tr))];
+            return [
+                ch,
+                rpgen3.addInputBool($('<td>').appendTo(tr), {
+                    label: 'merge',
+                    value: ch !== 9
+                })
+            ];
         });
     }).addClass('btn');
     const table = $('<table>').appendTo(addHideArea('channels').html);
