@@ -25,7 +25,7 @@
         [
             'MidiNote',
             'MidiNoteMessage',
-            'getTempos',
+            'MidiTempoMessage',
             'toMIDI'
         ].map(v => `https://rpgen3.github.io/piano/mjs/midi/${v}.mjs`)
     ].flat());
@@ -114,7 +114,6 @@
         const unchanged = new Set(isMergeList.filter(([ch, f]) => !f()).map(([ch, f]) => ch));
         const unchangedChannels = [...channels].filter(([ch, midiNoteArray]) => unchanged.has(ch));
         const {timeDivision} = g_midi;
-        const tempos = rpgen4.getTempos(g_midi);
         rpgen3.download(
             rpgen4.toMIDI({
                 tracks: [
@@ -127,7 +126,7 @@
                         return midiNote;
                     })
                 ]).sort(([a], [b]) => a - b),
-                bpm: rpgen4.toggleTempoAndBpm([...tempos][0][1]),
+                bpm: rpgen4.MidiTempoMessage.makeArray(g_midi)[0].bpm,
                 div: timeDivision
             }),
             `midiMerge.mid`
