@@ -16,16 +16,13 @@
     $('<h1>').appendTo(head).text('MIDIの合併');
     $('<h2>').appendTo(head).text('MIDIのいくつかのトラックの合併');
     const rpgen3 = await importAll([
-        [
-            'input',
-            'css',
-            'util'
-        ].map(v => `https://rpgen3.github.io/mylib/export/${v}.mjs`)
-    ].flat());
+        'input',
+        'css',
+        'util'
+    ].map(v => `https://rpgen3.github.io/mylib/export/${v}.mjs`));
     const rpgen4 = await importAll([
         'https://rpgen3.github.io/maze/mjs/heap/Heap.mjs',
         [
-            
             'MidiNote',
             'MidiNoteMessage',
             'getTempos',
