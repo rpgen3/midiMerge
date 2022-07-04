@@ -94,7 +94,7 @@
         isMergeList = [...channels.keys()].sort((a, b) => a - b).map(ch => {
             const tr = $('<tr>').appendTo(tbody);
             for(const v of [
-                `チャンネル${ch + 1}`,
+                `Ch.${ch + 1}`,
                 get(ch).length
             ]) $('<td>').appendTo(tr).text(v);
             return [
