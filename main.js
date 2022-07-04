@@ -120,7 +120,13 @@
                 tracks: [
                     mergedChannel,
                     ...unchangedChannels
-                ].filter(v => v).map(([ch, midiNoteArray]) => [ch, rpgen4.MidiNoteMessage.makeArray(midiNoteArray)]).sort(([a], [b]) => a - b),
+                ].filter(v => v).map(([ch, midiNoteArray]) => [
+                    ch,
+                    rpgen4.MidiNoteMessage.makeArray(midiNoteArray).map(midiNote => {
+                        midiNote.ch = ch;
+                        return midiNote;
+                    })
+                ]).sort(([a], [b]) => a - b),
                 bpm: rpgen4.toggleTempoAndBpm([...tempos][0][1]),
                 div: timeDivision
             }),
