@@ -27,6 +27,7 @@
   const rpgen4 = await importAll(
     [
       "https://rpgen3.github.io/maze/mjs/heap/Heap.mjs",
+      "https://rpgen3.github.io/midi/mjs/piano.mjs",
       ["MidiNote", "MidiNoteMessage", "MidiTempoMessage", "toMIDI"].map(
         (v) => `https://rpgen3.github.io/piano/mjs/midi/${v}.mjs`
       ),
@@ -127,8 +128,10 @@
       const merged = new Set(
         isMergeList.filter(([_, f]) => f()).map(([channel, _]) => channel)
       );
+      const is_merge_by_bar = g_is_merge_by_bar();
       const mergedChannel = mergeChannels(
-        [...channels].filter(([channel, _]) => merged.has(channel))
+        [...channels].filter(([channel, _]) => merged.has(channel)),
+        is_merge_by_bar
       );
       const unchanged = new Set(
         isMergeList.filter(([_, f]) => !f()).map(([channel, _]) => channel)
@@ -156,11 +159,39 @@
         }),
         `midiMerge.mid`
       );
+      if (is_merge_by_bar) {
+        const [_, result] = mergedChannel;
+        let str = "";
+        const arr = [];
+        let prevTime = 0;
+        for (const midiNote of result.concat(null)) {
+          if (midiNote === null || midiNote.start !== prevTime) {
+            str += arr
+              .sort((a, b) => a - b)
+              .map((v) => rpgen4.piano.note[v - 21])
+              .join("");
+            str += "\n";
+            while (arr.length) {
+              arr.pop();
+            }
+            if (midiNote === null) {
+              break;
+            }
+          }
+          arr.push(midiNote.pitch);
+          prevTime = midiNote.start;
+        }
+        rpgen3.addInputStr(foot.empty(), {
+          label: "低い音から順に構成音",
+          textarea: true,
+          copy: true,
+          value: str,
+        });
+      }
     })
     .addClass("btn");
-  const mergeChannels = (channels) => {
+  const mergeChannels = (channels, is_merge_by_bar) => {
     if (channels < 2) return null;
-    const is_merge_by_bar = g_is_merge_by_bar();
     const heap = new rpgen4.Heap();
     for (const [_, midiNoteArray] of channels) {
       for (const midiNote of midiNoteArray) {
