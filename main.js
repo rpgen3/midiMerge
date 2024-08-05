@@ -63,6 +63,7 @@
     });
   };
   let g_midi = null;
+  let g_is_merge_by_bar = null;
   {
     const { html } = addHideArea("input MIDI file");
     $("<dt>").appendTo(html).text("MIDIファイル");
@@ -72,6 +73,12 @@
     });
     MidiParser.parse(inputFile.get(0), (v) => {
       g_midi = v;
+    });
+    $("<dd>").appendTo(html);
+    g_is_merge_by_bar = rpgen3.addInputBool(html, {
+      label: "二分音符ごとに合併する",
+      save: true,
+      value: false,
     });
   }
   const makeSafelyGet = (m) => (k) => {
@@ -153,9 +160,17 @@
     .addClass("btn");
   const mergeChannels = (channels) => {
     if (channels < 2) return null;
+    const is_merge_by_bar = g_is_merge_by_bar();
     const heap = new rpgen4.Heap();
     for (const [_, midiNoteArray] of channels) {
-      for (const midiNote of midiNoteArray) heap.add(midiNote.start, midiNote);
+      for (const midiNote of midiNoteArray) {
+        if (is_merge_by_bar) {
+          const unit = 480 * 2;
+          midiNote.start = ((midiNote.start / unit) | 0) * unit;
+          midiNote.end = midiNote.start + unit;
+        }
+        heap.add(midiNote.start, midiNote);
+      }
     }
     const result = [];
     const now = new Map();
